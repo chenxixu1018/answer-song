@@ -6,7 +6,7 @@ const rootDir = __dirname;
 loadLocalEnv(path.join(rootDir, ".env.local"));
 
 const port = Number(process.env.PORT || 5173);
-const host = process.env.HOST || "127.0.0.1";
+const host = process.env.HOST || "0.0.0.0";
 const aiApiKey = process.env.TOKENHUB_API_KEY || process.env.HUNYUAN_API_KEY;
 const aiModel = process.env.TOKENHUB_MODEL || process.env.HUNYUAN_MODEL || "deepseek-v4-pro-202606";
 const aiEndpoint =
