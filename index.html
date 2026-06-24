@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QQ音乐 - 答案之书</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="phone-shell" aria-live="polite">
+      <section class="app-screen" id="app">
+        <canvas class="particle-canvas" id="particleCanvas" aria-hidden="true"></canvas>
+        <div class="stars"></div>
+        <div class="galaxy"></div>
+        <div class="soft-star soft-star-left"></div>
+        <div class="soft-star soft-star-right"></div>
+
+        <section class="splash-screen" id="splashScreen" aria-labelledby="splashTitle">
+          <div class="splash-orbit" aria-hidden="true">
+            <span class="splash-ring splash-ring-main"></span>
+            <span class="splash-ring splash-ring-back"></span>
+            <span class="splash-aura"></span>
+            <span class="splash-music-mark"></span>
+            <span class="splash-spark splash-spark-one"></span>
+            <span class="splash-spark splash-spark-two"></span>
+            <span class="splash-spark splash-spark-three"></span>
+          </div>
+          <div class="splash-content">
+            <h2 id="splashTitle"><span>答案</span><span>之歌</span></h2>
+            <p class="splash-kicker">THE ANSWER<br />IS IN A SONG</p>
+            <span class="splash-divider" aria-hidden="true"></span>
+            <p class="splash-copy">把问题交给音乐<br />让歌词告诉你答案</p>
+            <button class="splash-start" type="button" id="splashStart">
+              开始寻找答案
+              <span class="splash-button-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+        </section>
+
+        <header class="topbar">
+          <button class="icon-button back-button" type="button" aria-label="返回">
+            <span class="chevron-left"></span>
+          </button>
+          <h1>歌词卡</h1>
+          <div class="topbar-actions">
+            <button class="icon-button" type="button" aria-label="搜索">
+              <span class="search-icon"></span>
+            </button>
+            <button class="icon-button" type="button" aria-label="分享">
+              <span class="share-icon"></span>
+            </button>
+          </div>
+        </header>
+
+        <div class="progress-row" aria-label="连续抽卡进度">
+          <span class="progress-dot done">✓</span>
+          <span class="progress-dot done">✓</span>
+          <span class="progress-dot done">✓</span>
+          <span class="progress-dot done">✓</span>
+          <span class="progress-dot today">今</span>
+          <span class="progress-dot future">4</span>
+          <span class="progress-dot future">SSR</span>
+        </div>
+
+        <section class="view view-question is-active" data-view="question">
+          <div class="question-card">
+            <div class="book-tab" aria-hidden="true">答案之书</div>
+            <h2>把问题交给这首歌</h2>
+            <p class="question-copy">写下此刻最想知道的事，让歌词替你轻轻回应。</p>
+            <label class="question-label" for="questionInput">想问什么</label>
+            <textarea
+              id="questionInput"
+              maxlength="60"
+              placeholder="最近的犹豫，会有答案吗？"
+              rows="2"
+            ></textarea>
+            <div class="question-meta">
+              <span id="questionHint">建议 4-40 字</span>
+              <span id="questionCount">0/40</span>
+            </div>
+            <div class="quick-questions" aria-label="快捷问题">
+              <button type="button" data-question="我的事业下一步该怎么走">关于事业</button>
+              <button type="button" data-question="这段感情还值得继续靠近吗">关于爱情</button>
+              <button type="button" data-question="我现在的人生方向清晰吗">关于人生</button>
+              <button type="button" data-question="这段友情需要我主动一点吗">关于友情</button>
+              <button type="button" data-question="最近的学业会有新的突破吗">关于学业</button>
+              <button type="button" data-question="我该如何更好地照顾自己">关于自己</button>
+              <button type="button" data-question="家人之间的关系会慢慢变好吗">关于家庭</button>
+            </div>
+          </div>
+          <button class="primary-button question-submit" type="button">写下问题后抽答案</button>
+        </section>
+
+        <section class="view view-draw" data-view="draw">
+          <p class="draw-tip">左右滑动切换卡片，连抽7天必中SSR</p>
+          <div class="pointer-triangle" aria-hidden="true"></div>
+          <div class="card-stage" id="cardStage" aria-label="歌词卡组，可左右滑动">
+            <article class="draw-card card-left-far" aria-hidden="true">
+              <div class="card-back"></div>
+            </article>
+            <article class="draw-card card-left" aria-hidden="true">
+              <div class="card-back"></div>
+            </article>
+            <article class="draw-card card-current" aria-label="当前歌词卡">
+              <div class="card-back"></div>
+            </article>
+            <article class="draw-card card-right" aria-hidden="true">
+              <div class="card-back"></div>
+            </article>
+            <article class="draw-card card-right-far" aria-hidden="true">
+              <div class="card-back"></div>
+            </article>
+          </div>
+          <p class="question-memory" id="questionMemory"></p>
+          <button class="primary-button draw-submit" type="button">抽这张</button>
+        </section>
+
+        <section class="view view-result" data-view="result">
+          <div class="result-scroll">
+            <article class="result-card">
+              <img class="result-card-image" alt="" />
+            </article>
+            <p class="card-title" id="cardTitle">【SSR】 - 后来的我们</p>
+
+            <section class="lyric-section">
+              <h3>今日歌词</h3>
+              <article class="lyric-card">
+                <div class="lyric-cover">
+                  <img class="lyric-cover-image" alt="" />
+                  <div class="cover-sun"></div>
+                  <div class="cover-people">
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+                <div class="lyric-info">
+                  <p id="todayLyric">只期待后来的你能快乐<br />那就是后来的我最想的</p>
+                  <span id="songMeta">——《后来的我们》五月天</span>
+                </div>
+                <button class="play-button" type="button" aria-label="播放歌曲"></button>
+              </article>
+            </section>
+
+            <section class="analysis-section">
+              <div class="section-title-row">
+                <h3>牌面解析</h3>
+                <button class="more-analysis" type="button">元宝看更多解析 ›</button>
+              </div>
+              <div class="analysis-box" id="analysisBox">
+                <p class="analysis-loading">正在从歌词里找答案</p>
+                <div class="skeleton-lines">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </section>
+
+            <div class="result-actions">
+              <button class="secondary-button" type="button" id="moreCards">更多卡片</button>
+              <button class="primary-button invite-button" type="button">
+                邀请好友得抽卡机会
+                <span>已邀请0/2</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <nav class="bottom-nav" aria-label="底部导航">
+          <button type="button">
+            <span class="nav-icon nav-square"></span>
+            广场
+          </button>
+          <button class="active" type="button">
+            <span class="nav-icon nav-calendar"></span>
+            每日抽卡
+          </button>
+          <button type="button">
+            <span class="nav-icon nav-user"></span>
+            我的
+          </button>
+        </nav>
+      </section>
+    </main>
+
+    <script src="./cards/cards.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
