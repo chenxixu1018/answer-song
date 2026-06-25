@@ -24,6 +24,7 @@ const mimeTypes = {
   ".webp": "image/webp",
   ".gif": "image/gif",
   ".svg": "image/svg+xml",
+  ".mp3": "audio/mpeg",
   ".ttf": "font/ttf",
 };
 
@@ -189,11 +190,32 @@ function cleanText(value, maxLength) {
 }
 
 function buildLocalAnalysis({ question, lyric, songInfo }) {
-  return [
+  const openingTemplates = [
     `你问「${question}」，这句歌词没有急着给出一个绝对答案，而是在提醒你先看见自己的真实感受。`,
+    `关于「${question}」，这首歌没有替你把结果定死，它更像是在轻轻问你：这件事带给你的感觉是什么？`,
+    `你把「${question}」交给歌词，它给的不是简单的该或不该，而是让你先回到自己心里的那一瞬间。`,
+    `面对「${question}」，这张歌词卡没有催你马上判断，它更在意你靠近它时，是安心还是疲惫。`,
+  ];
+  const clueTemplates = [
     `「${lyric}」来自 ${songInfo}，它像是在说：重要的不是马上确定结果，而是确认这件事是否仍然让你愿意靠近。`,
+    `${songInfo} 里的「${lyric}」像一条很轻的线索，提醒你别只看结果，也看看自己有没有被好好接住。`,
+    `这句「${lyric}」不是命令，更像提示：真正的答案，往往藏在你听完后最诚实的反应里。`,
+  ];
+  const actionTemplates = [
     "如果今天要往前一步，可以先选一个让你更平静、更坦然的小动作。答案不会一下子全亮，但它会在行动里慢慢变清楚。",
+    "不用立刻做很大的决定。先把节奏放慢一点，等情绪安静下来，你会更知道自己想靠近还是停一停。",
+    "今天可以先观察自己的感受：什么让你松一口气，什么又让你反复消耗。这个答案会比表面的对错更重要。",
+  ];
+
+  return [
+    pick(openingTemplates),
+    pick(clueTemplates),
+    pick(actionTemplates),
   ].join("\n\n");
+}
+
+function pick(items) {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 function sendJson(response, status, data) {

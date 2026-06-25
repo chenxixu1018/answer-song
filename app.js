@@ -1,7 +1,9 @@
 const views = document.querySelectorAll(".view");
 const appScreen = document.querySelector("#app");
-const splashScreen = document.querySelector("#splashScreen");
-const splashStart = document.querySelector("#splashStart");
+const introScreen = document.querySelector("#introScreen");
+const introParticleCluster = document.querySelector("#introParticleCluster");
+const bgmAudio = document.querySelector("#bgmAudio");
+const bgmToggles = document.querySelectorAll(".bgm-toggle");
 const progressRow = document.querySelector(".progress-row");
 const backButton = document.querySelector(".back-button");
 const questionInput = document.querySelector("#questionInput");
@@ -29,14 +31,17 @@ const STORAGE_KEY = "qqmusic_answer_book_question";
 const MAX_RECOMMENDED_LENGTH = 40;
 const QUESTION_TRANSITION_MS = 340;
 const ANALYSIS_ENDPOINT = "/api/analyze";
-const SPLASH_EXIT_MS = 720;
+const DESIGN_WIDTH = 430;
+const DESIGN_HEIGHT = 932;
+const INTRO_LIFT_DELAY_MS = 6200;
+const INTRO_HIDE_MS = 7900;
 const DRAW_ENTER_MS = 980;
 const RITUAL_FLIP_MS = 980;
 const RESULT_REVEAL_MS = 2380;
 const CARD_STREAM_STEP = 86;
 
 let currentView = "question";
-let question = localStorage.getItem(STORAGE_KEY) || "";
+let question = "";
 let drawIndex = 0;
 let carouselOffset = 0;
 let isDrawing = false;
@@ -47,16 +52,213 @@ let particleAnimationId = 0;
 let wasQuestionReady = false;
 let selectedCard = null;
 let drawEnterTimer = 0;
+let hasStartedBgm = false;
+let bgmRetryTimer = 0;
+let isBgmManuallyMuted = true;
 
-function enterApp() {
-  if (!splashScreen || splashScreen.classList.contains("is-leaving")) return;
+function syncAppScale() {
+  const viewportWidth = window.innerWidth || DESIGN_WIDTH;
+  const viewportHeight = window.innerHeight || DESIGN_HEIGHT;
+  const scale = Math.min(viewportWidth / DESIGN_WIDTH, viewportHeight / DESIGN_HEIGHT);
+  document.documentElement.style.setProperty("--app-scale", String(Math.max(scale, 0.1)));
+}
 
-  appScreen.classList.add("is-entering");
-  splashScreen.classList.add("is-leaving");
+function playIntro() {
+  if (!introScreen) return;
+
+  buildIntroParticles();
+
   window.setTimeout(() => {
-    splashScreen.hidden = true;
-    appScreen.classList.remove("is-entering");
-  }, SPLASH_EXIT_MS);
+    introScreen.classList.add("is-lifting");
+  }, INTRO_LIFT_DELAY_MS);
+
+  window.setTimeout(() => {
+    introScreen.hidden = true;
+    startBgm();
+  }, INTRO_HIDE_MS);
+}
+
+async function startBgm() {
+  if (!bgmAudio || hasStartedBgm || isBgmManuallyMuted) return false;
+
+  bgmAudio.loop = true;
+  bgmAudio.muted = false;
+  bgmAudio.volume = 0.72;
+  if (bgmAudio.currentTime === 0 || bgmAudio.ended) {
+    bgmAudio.currentTime = 0;
+  }
+
+  let playPromise;
+  try {
+    playPromise = bgmAudio.play();
+  } catch (error) {
+    hasStartedBgm = false;
+    syncBgmToggle();
+    return false;
+  }
+
+  if (!playPromise) {
+    hasStartedBgm = true;
+    syncBgmToggle();
+    return true;
+  }
+
+  try {
+    await playPromise;
+    hasStartedBgm = true;
+    syncBgmToggle();
+    return true;
+  } catch (error) {
+    return startBgmMutedThenUnmute();
+  }
+}
+
+async function startBgmMutedThenUnmute() {
+  if (!bgmAudio || hasStartedBgm || isBgmManuallyMuted) return false;
+
+  bgmAudio.muted = true;
+  let playPromise;
+  try {
+    playPromise = bgmAudio.play();
+  } catch (error) {
+    bgmAudio.muted = false;
+    hasStartedBgm = false;
+    syncBgmToggle();
+    return false;
+  }
+  if (!playPromise) {
+    hasStartedBgm = true;
+    bgmAudio.muted = false;
+    syncBgmToggle();
+    return true;
+  }
+
+  try {
+    await playPromise;
+    hasStartedBgm = true;
+    window.setTimeout(() => {
+      if (!isBgmManuallyMuted) bgmAudio.muted = false;
+    }, 80);
+    syncBgmToggle();
+    return true;
+  } catch (error) {
+    bgmAudio.muted = false;
+    hasStartedBgm = false;
+    syncBgmToggle();
+    return false;
+  }
+}
+
+function scheduleBgmRetries() {
+  window.clearInterval(bgmRetryTimer);
+  bgmRetryTimer = window.setInterval(() => {
+    if (hasStartedBgm) {
+      window.clearInterval(bgmRetryTimer);
+      return;
+    }
+    startBgm();
+  }, 900);
+}
+
+function armBgmFallback() {
+  const playOnce = (event) => {
+    if (event.target?.closest?.(".bgm-toggle")) return;
+
+    startBgm();
+    if (hasStartedBgm) {
+      window.removeEventListener("pointerdown", playOnce);
+      window.removeEventListener("touchstart", playOnce);
+      window.removeEventListener("keydown", playOnce);
+    }
+  };
+
+  window.addEventListener("pointerdown", playOnce, { passive: true });
+  window.addEventListener("touchstart", playOnce, { passive: true });
+  window.addEventListener("keydown", playOnce);
+}
+
+function syncBgmToggle() {
+  const isOn = !isBgmManuallyMuted && hasStartedBgm && !bgmAudio?.paused;
+  bgmToggles.forEach((toggle) => {
+    toggle.classList.toggle("is-on", isOn);
+    toggle.setAttribute("aria-pressed", String(isOn));
+    toggle.setAttribute("aria-label", isOn ? "关闭声音" : "开启声音");
+  });
+}
+
+async function toggleBgm() {
+  if (!bgmAudio) return;
+
+  if (!isBgmManuallyMuted && (bgmAudio.paused || !hasStartedBgm)) {
+    const didStart = await startBgm();
+    isBgmManuallyMuted = !didStart;
+    if (didStart) {
+      scheduleBgmRetries();
+    }
+    syncBgmToggle();
+    return;
+  }
+
+  isBgmManuallyMuted = !isBgmManuallyMuted;
+
+  if (isBgmManuallyMuted) {
+    bgmAudio.pause();
+    bgmAudio.muted = true;
+    hasStartedBgm = false;
+    window.clearInterval(bgmRetryTimer);
+  } else {
+    bgmAudio.muted = false;
+    hasStartedBgm = false;
+    const didStart = await startBgm();
+    isBgmManuallyMuted = !didStart;
+    if (didStart) {
+      scheduleBgmRetries();
+    }
+  }
+
+  syncBgmToggle();
+}
+
+function buildIntroParticles() {
+  if (!introParticleCluster || introParticleCluster.childElementCount) return;
+
+  const particleCount = 760;
+  const fragment = document.createDocumentFragment();
+
+  for (let index = 0; index < particleCount; index += 1) {
+    const particle = document.createElement("span");
+    const angle = Math.random() * Math.PI * 2;
+    const density = Math.random();
+    const startRadius = 140 + Math.random() * 250;
+    const midRadius = density < 0.82
+      ? 24 + Math.random() * 130
+      : 128 + Math.random() * 98;
+    const scatterAngle = angle + (Math.random() - 0.5) * Math.PI * 1.45;
+    const endRadius = 500 + Math.random() * 680;
+    const endStretchX = 0.82 + Math.random() * 0.58;
+    const endStretchY = 0.72 + Math.random() * 0.76;
+    const endJitterX = (Math.random() - 0.5) * 240;
+    const endJitterY = (Math.random() - 0.5) * 220;
+    const size = density < 0.76 ? 0.9 + Math.random() * 1.45 : 0.55 + Math.random() * 0.8;
+    const delay = Math.random() * 0.95;
+    const duration = 5.4 + Math.random() * 0.9;
+    const warm = Math.random() > 0.76;
+
+    particle.className = "intro-particle";
+    particle.style.setProperty("--sx", `${Math.cos(angle) * startRadius}px`);
+    particle.style.setProperty("--sy", `${Math.sin(angle) * startRadius * 0.78}px`);
+    particle.style.setProperty("--mx", `${Math.cos(angle + 0.7) * midRadius}px`);
+    particle.style.setProperty("--my", `${Math.sin(angle + 0.7) * midRadius}px`);
+    particle.style.setProperty("--ex", `${Math.cos(scatterAngle) * endRadius * endStretchX + endJitterX}px`);
+    particle.style.setProperty("--ey", `${Math.sin(scatterAngle) * endRadius * endStretchY + endJitterY}px`);
+    particle.style.setProperty("--size", `${size}px`);
+    particle.style.setProperty("--delay", `${delay}s`);
+    particle.style.setProperty("--duration", `${duration}s`);
+    particle.style.setProperty("--color", warm ? "rgba(238, 218, 174, 0.92)" : "rgba(210, 224, 255, 0.9)");
+    fragment.appendChild(particle);
+  }
+
+  introParticleCluster.appendChild(fragment);
 }
 
 const drawProgressMarkup = `
@@ -412,10 +614,31 @@ async function requestLyricAnalysis(card) {
 }
 
 function buildLocalAnalysis(card) {
-  return [
-    `你问「${question}」，这张牌没有给一个斩钉截铁的答案，而是把重点放回到你的感受上。`,
+  const openingTemplates = [
+    `你问「${question}」，这张牌没有急着替你下结论，它更像是在提醒你：先听见自己真正的感受。`,
+    `关于「${question}」，这张牌给出的不是非黑即白的判断，而是把答案轻轻推回你的心里。`,
+    `你把「${question}」交给了这首歌，它没有直接说该不该，而是在问：你靠近这件事时，心里是安稳还是消耗？`,
+    `对「${question}」这件事，歌词没有给出斩钉截铁的方向，它更在意你此刻被触动的那一部分。`,
+    `这张牌回应「${question}」的方式很温柔：答案也许不在别人怎么说，而在你听完之后身体里的感觉。`,
+    `你问的是「${question}」，但这张牌没有把选择推向某个固定结果，它先把你的感受放到了最前面。`,
+  ];
+  const clueTemplates = [
     `「${card.lyric}」是 ${card.songInfo} 给你的线索。它把答案放得很轻：先照顾好当下的感受，再决定下一步怎么走。`,
+    `${card.songInfo} 里的「${card.lyric}」像一束很暗的光，不催你立刻决定，只提醒你别忽略心里最真实的回声。`,
+    `这句「${card.lyric}」不是命令，更像提示。它让你先看清自己在这段关系、这件事里，是被滋养，还是一直在用力。`,
+    `从「${card.lyric}」里听到的答案很轻：如果某个方向让你更平静，它也许就比看起来更接近真实。`,
+  ];
+  const actionTemplates = [
     "如果今天要做一个小决定，可以先选那个让你更平静的方向。往前走一点，答案会比现在更清楚。",
+    "不用马上把所有事定下来。先给自己一点空间，等情绪落地之后，你会更知道该靠近还是停一停。",
+    "今天可以先不追求正确答案，只观察自己的反应：什么让你放松，什么让你反复拧紧。",
+    "把决定放慢一点也没关系。真正适合你的方向，通常不会只靠焦虑推动你前进。",
+  ];
+
+  return [
+    pick(openingTemplates),
+    pick(clueTemplates),
+    pick(actionTemplates),
   ].join("\n\n");
 }
 
@@ -536,18 +759,32 @@ function syncQuickQuestionState() {
   });
 }
 
+syncAppScale();
+syncBgmToggle();
+playIntro();
 renderQuickQuestions();
 questionInput.value = question;
 syncQuestionState();
 applyCardPositions();
 
-splashStart?.addEventListener("click", enterApp);
+window.addEventListener("resize", syncAppScale);
+window.addEventListener("orientationchange", syncAppScale);
+bgmToggles.forEach((toggle) => {
+  toggle.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
 
-splashScreen?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
-    enterApp();
-  }
+    toggle.dataset.pointerHandled = "true";
+    toggleBgm();
+  });
+  toggle.addEventListener("click", (event) => {
+    if (toggle.dataset.pointerHandled === "true") {
+      delete toggle.dataset.pointerHandled;
+      return;
+    }
+
+    toggleBgm();
+  });
 });
 
 questionInput.addEventListener("input", syncQuestionState);

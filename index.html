@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <audio id="bgmAudio" src="./bgm.mp3" preload="auto" loop playsinline></audio>
     <main class="phone-shell" aria-live="polite">
       <section class="app-screen" id="app">
         <canvas class="particle-canvas" id="particleCanvas" aria-hidden="true"></canvas>
@@ -15,25 +16,13 @@
         <div class="soft-star soft-star-left"></div>
         <div class="soft-star soft-star-right"></div>
 
-        <section class="splash-screen" id="splashScreen" aria-labelledby="splashTitle">
-          <div class="splash-orbit" aria-hidden="true">
-            <span class="splash-ring splash-ring-main"></span>
-            <span class="splash-ring splash-ring-back"></span>
-            <span class="splash-aura"></span>
-            <span class="splash-music-mark"></span>
-            <span class="splash-spark splash-spark-one"></span>
-            <span class="splash-spark splash-spark-two"></span>
-            <span class="splash-spark splash-spark-three"></span>
-          </div>
-          <div class="splash-content">
-            <h2 id="splashTitle"><span>答案</span><span>之歌</span></h2>
-            <p class="splash-kicker">THE ANSWER<br />IS IN A SONG</p>
-            <span class="splash-divider" aria-hidden="true"></span>
-            <p class="splash-copy">把问题交给音乐<br />让歌词告诉你答案</p>
-            <button class="splash-start" type="button" id="splashStart">
-              开始寻找答案
-              <span class="splash-button-arrow" aria-hidden="true">→</span>
-            </button>
+        <section class="intro-screen" id="introScreen" aria-hidden="true">
+          <button class="icon-button bgm-toggle intro-bgm-toggle" type="button" aria-label="开启声音" aria-pressed="false">
+            <span class="player-icon"></span>
+          </button>
+          <div class="loading-oracle">
+            <p class="loading-title">答案之歌载入中</p>
+            <div class="particle-cluster" id="introParticleCluster" aria-hidden="true"></div>
           </div>
         </section>
 
@@ -43,8 +32,8 @@
           </button>
           <h1>歌词卡</h1>
           <div class="topbar-actions">
-            <button class="icon-button" type="button" aria-label="搜索">
-              <span class="search-icon"></span>
+            <button class="icon-button bgm-toggle" type="button" aria-label="开启声音" aria-pressed="false">
+              <span class="player-icon"></span>
             </button>
             <button class="icon-button" type="button" aria-label="分享">
               <span class="share-icon"></span>
@@ -67,7 +56,6 @@
             <div class="book-tab" aria-hidden="true">答案之书</div>
             <h2>把问题交给这首歌</h2>
             <p class="question-copy">写下此刻最想知道的事，让歌词替你轻轻回应。</p>
-            <label class="question-label" for="questionInput">想问什么</label>
             <textarea
               id="questionInput"
               maxlength="60"
@@ -85,7 +73,6 @@
               <button type="button" data-question="这段友情需要我主动一点吗">关于友情</button>
               <button type="button" data-question="最近的学业会有新的突破吗">关于学业</button>
               <button type="button" data-question="我该如何更好地照顾自己">关于自己</button>
-              <button type="button" data-question="家人之间的关系会慢慢变好吗">关于家庭</button>
             </div>
           </div>
           <button class="primary-button question-submit" type="button">写下问题后抽答案</button>
